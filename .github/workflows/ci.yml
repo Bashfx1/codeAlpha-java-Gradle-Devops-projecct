@@ -57,6 +57,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "app/build/libs/app.jar"
           target: "/home/ubuntu/app"
+          strip_components: 3
 
       - name: Deploy application
         uses: appleboy/ssh-action@v1
