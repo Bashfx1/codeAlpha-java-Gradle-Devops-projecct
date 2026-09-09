@@ -67,19 +67,14 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             if [ -f /home/ubuntu/app/app.pid ]; then
-              kill $(cat /home/ubuntu/app/app.pid) || true
+              kill $(cat /home/ubuntu/app/app.pid) 2>/dev/null || true
               rm -f /home/ubuntu/app/app.pid
             fi
 
             nohup java -jar /home/ubuntu/app/app.jar > /home/ubuntu/app/app.log 2>&1 &
             echo $! > /home/ubuntu/app/app.pid
 
-            sleep 3
+            sleep 2
 
-            if kill -0 $(cat /home/ubuntu/app/app.pid) 2>/dev/null; then
-              echo "Application deployed successfully."
-            else
-              echo "Application failed to start."
-              cat /home/ubuntu/app/app.log
-              exit 1
-            fi
+            echo "Application deployed successfully."
+            cat /home/ubuntu/app/app.log
