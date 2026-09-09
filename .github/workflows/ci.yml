@@ -65,5 +65,20 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            pkill -f 'java -jar /home/ubuntu/app/app.jar' || true
+            if [ -f /home/ubuntu/app/app.pid ]; then
+              kill $(cat /home/ubuntu/app/app.pid) || true
+              rm -f /home/ubuntu/app/app.pid
+            fi
+
             nohup java -jar /home/ubuntu/app/app.jar > /home/ubuntu/app/app.log 2>&1 &
+            echo $! > /home/ubuntu/app/app.pid
+
+            sleep 3
+
+            if kill -0 $(cat /home/ubuntu/app/app.pid) 2>/dev/null; then
+              echo "Application deployed successfully."
+            else
+              echo "Application failed to start."
+              cat /home/ubuntu/app/app.log
+              exit 1
+            fi
