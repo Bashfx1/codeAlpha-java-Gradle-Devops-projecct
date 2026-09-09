@@ -1,4 +1,4 @@
-name: Java Gradle CI
+nname: Java Gradle CI/CD
 
 on:
   push:
@@ -29,4 +29,41 @@ jobs:
         run: ./gradlew test
 
       - name: Build application
-        run: ./gradlew build
+        run: ./gradlew clean build
+
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-application
+          path: app/build/libs/app.jar
+
+  deploy:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: java-application
+          path: app/build/libs
+
+      - name: Copy JAR to EC2
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "app/build/libs/app.jar"
+          target: "/home/ubuntu/app"
+
+      - name: Deploy application
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            pkill -f 'java -jar /home/ubuntu/app/app.jar' || true
+            nohup java -jar /home/ubuntu/app/app.jar > /home/ubuntu/app/app.log 2>&1 &
